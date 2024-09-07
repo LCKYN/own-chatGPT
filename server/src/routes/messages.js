@@ -14,6 +14,7 @@ router.get('/:roomId', isAuthenticated, async (req, res) => {
     }
 });
 
+
 router.post('/:roomId', isAuthenticated, async (req, res) => {
     const userMessage = new Message({
         content: req.body.content,
@@ -22,9 +23,16 @@ router.post('/:roomId', isAuthenticated, async (req, res) => {
     });
 
     try {
+        // Save user message first
         const savedUserMessage = await userMessage.save();
+        res.status(201).json(savedUserMessage);
 
-        // Send to mock Claude API and get response
+        const io = req.app.get('io');
+        io.to(req.params.roomId).emit('new-message', savedUserMessage);
+
+        console.log('Sent user message:', savedUserMessage);
+
+        // Fetch Claude response asynchronously
         const claudeResponse = await mockClaudeResponse(req.body.content);
 
         const apiMessage = new Message({
@@ -34,12 +42,10 @@ router.post('/:roomId', isAuthenticated, async (req, res) => {
         });
 
         const savedApiMessage = await apiMessage.save();
-
-        res.status(201).json(savedUserMessage);
-
-        const io = req.app.get('io');
-        io.to(req.params.roomId).emit('new-message', savedUserMessage);
         io.to(req.params.roomId).emit('new-message', savedApiMessage);
+
+        console.log('Sent Claude response:', savedApiMessage);
+
     } catch (err) {
         res.status(400).json({ message: err.message });
     }

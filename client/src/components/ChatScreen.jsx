@@ -41,10 +41,12 @@ const ChatScreen = () => {
         });
 
         socket.on('new-message', (newMessage) => {
+            console.log('Received new message:', newMessage); // Add this to check
             if (newMessage.room === selectedRoom) {
                 setMessages(prevMessages => [...prevMessages, newMessage]);
             }
         });
+
 
         socket.on('message-deleted', (messageId) => {
             setMessages(prevMessages => prevMessages.filter(msg => msg._id !== messageId));
@@ -77,7 +79,7 @@ const ChatScreen = () => {
         scrollToBottom();
     }, [messages]);
 
-    
+
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

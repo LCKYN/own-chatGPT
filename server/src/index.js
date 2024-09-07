@@ -22,10 +22,10 @@ const server = http.createServer(app);
 connectDB();
 
 app.use(cors({
-    origin: 'http://localhost:7100',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: 'http://localhost:7100',  // Allow requests from your frontend
+    credentials: true,                 // Allow credentials (cookies/sessions) to be sent
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Allowed methods
+    allowedHeaders: ['Content-Type', 'Authorization'],  // Allowed headers
 }));
 app.use(express.json());
 
@@ -46,6 +46,11 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Credentials', 'true');
+    next();
+});
 
 passport.use(new DiscordStrategy({
     clientID: process.env.DISCORD_CLIENT_ID,
