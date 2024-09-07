@@ -1,5 +1,6 @@
 import express from 'express';
 import Room from '../models/Room.js';
+import Message from '../models/Message.js';
 import { isAuthenticated } from '../middlewares/auth.js';
 
 const router = express.Router();

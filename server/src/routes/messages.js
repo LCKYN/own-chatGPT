@@ -1,6 +1,7 @@
 import express from 'express';
 import Message from '../models/Message.js';
 import { isAuthenticated } from '../middlewares/auth.js';
+import mockClaudeResponse from '../services/mockClaudeApi.js';
 
 const router = express.Router();
 
@@ -14,15 +15,31 @@ router.get('/:roomId', isAuthenticated, async (req, res) => {
 });
 
 router.post('/:roomId', isAuthenticated, async (req, res) => {
-    const message = new Message({
+    const userMessage = new Message({
         content: req.body.content,
         sender: req.user.username,
         room: req.params.roomId
     });
+
     try {
-        const newMessage = await message.save();
-        res.status(201).json(newMessage);
-        req.app.get('io').to(req.params.roomId).emit('new-message', newMessage);
+        const savedUserMessage = await userMessage.save();
+
+        // Send to mock Claude API and get response
+        const claudeResponse = await mockClaudeResponse(req.body.content);
+
+        const apiMessage = new Message({
+            content: claudeResponse,
+            sender: 'Claude API',
+            room: req.params.roomId
+        });
+
+        const savedApiMessage = await apiMessage.save();
+
+        res.status(201).json(savedUserMessage);
+
+        const io = req.app.get('io');
+        io.to(req.params.roomId).emit('new-message', savedUserMessage);
+        io.to(req.params.roomId).emit('new-message', savedApiMessage);
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
