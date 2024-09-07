@@ -12,6 +12,7 @@ import authRoutes from './routes/auth.js';
 import roomRoutes from './routes/rooms.js';
 import messageRoutes from './routes/messages.js';
 import setupSocket from './services/socket.js';
+import { isAllowedUser, isAllowedUserMiddleware } from './middlewares/allowedUsers.js';
 
 dotenv.config();
 
@@ -28,7 +29,6 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Updated session middleware
 const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -53,8 +53,12 @@ passport.use(new DiscordStrategy({
     callbackURL: 'http://localhost:7101/auth/discord/callback',
     scope: ['identify', 'email']
 }, (accessToken, refreshToken, profile, done) => {
-    // Here you would typically find or create a user in your database
-    done(null, profile);
+    // Check if the user's ID is in the allowed list
+    if (isAllowedUser(profile)) {
+        done(null, profile);
+    } else {
+        done(null, false, { message: 'User not allowed' });
+    }
 }));
 
 passport.serializeUser((user, done) => {
@@ -68,15 +72,14 @@ passport.deserializeUser((user, done) => {
 const io = setupSocket(server);
 app.set('io', io);
 
-// Share session middleware with Socket.IO
 io.use((socket, next) => {
     sessionMiddleware(socket.request, {}, next);
 });
 
 // Routes
 app.use('/auth', authRoutes);
-app.use('/api/rooms', roomRoutes);
-app.use('/api/messages', messageRoutes);
+app.use('/api/rooms', isAllowedUserMiddleware, roomRoutes);
+app.use('/api/messages', isAllowedUserMiddleware, messageRoutes);
 
 const port = process.env.PORT || 7101;
 

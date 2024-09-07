@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import LckynIntro from './components/LckynIntro'
 import ChatScreen from './components/ChatScreen'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAllowed, setIsAllowed] = useState(true);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -16,9 +17,15 @@ function App() {
             .then(data => {
                 if (data.message !== 'Unauthorized') {
                     setIsAuthenticated(true);
+                    setIsAllowed(true);
                 }
             })
-            .catch(err => console.error('Error checking auth status:', err))
+            .catch(err => {
+                console.error('Error checking auth status:', err);
+                if (err.message.includes('not allowed')) {
+                    setIsAllowed(false);
+                }
+            })
             .finally(() => setLoading(false));
     }, []);
 
@@ -30,11 +37,11 @@ function App() {
         <Router>
             <div className="bg-gray-100 min-h-screen">
                 <Routes>
-                    <Route path="/" element={isAuthenticated ? <Navigate to="/chat" /> : <LckynIntro />} />
+                    <Route path="/" element={<LckynIntro isAuthenticated={isAuthenticated} isAllowed={isAllowed} />} />
                     <Route
                         path="/chat"
                         element={
-                            <ProtectedRoute isAuthenticated={isAuthenticated}>
+                            <ProtectedRoute isAuthenticated={isAuthenticated} isAllowed={isAllowed}>
                                 <ChatScreen />
                             </ProtectedRoute>
                         }

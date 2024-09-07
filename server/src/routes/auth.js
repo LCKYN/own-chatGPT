@@ -6,12 +6,15 @@ const router = express.Router();
 router.get('/discord', passport.authenticate('discord'));
 
 router.get('/discord/callback',
-    passport.authenticate('discord', { failureRedirect: '/login' }),
+    passport.authenticate('discord', { failureRedirect: '/auth/login-failed' }),
     (req, res) => {
-        // Successful authentication, redirect to chat.
         res.redirect('http://localhost:7100/chat');
     }
 );
+
+router.get('/login-failed', (req, res) => {
+    res.status(401).json({ message: 'Login failed. User not allowed.' });
+});
 
 router.get('/logout', (req, res) => {
     req.logout((err) => {

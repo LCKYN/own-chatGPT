@@ -1,9 +1,15 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-const LckynIntro = () => {
+const LckynIntro = ({ isAuthenticated, isAllowed }) => {
+    const navigate = useNavigate();
+
     const handleLogin = () => {
         window.location.href = 'http://localhost:7101/auth/discord';
+    };
+
+    const handleGoToChat = () => {
+        navigate('/chat');
     };
 
     return (
@@ -14,12 +20,25 @@ const LckynIntro = () => {
             <p className="text-xl max-w-2xl mb-8">
                 I work on transforming complex data into actionable insights and developing cutting-edge machine learning solutions.
             </p>
-            <button
-                onClick={handleLogin}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            >
-                Login with Discord
-            </button>
+            {!isAuthenticated && isAllowed && (
+                <button
+                    onClick={handleLogin}
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                >
+                    Login with Discord
+                </button>
+            )}
+            {isAuthenticated && isAllowed && (
+                <button
+                    onClick={handleGoToChat}
+                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                >
+                    Go to Chat
+                </button>
+            )}
+            {!isAllowed && (
+                <p className="text-red-500">Sorry, you are not allowed to access this application.</p>
+            )}
         </div>
     );
 };
