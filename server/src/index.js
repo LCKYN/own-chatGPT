@@ -74,7 +74,7 @@ passport.deserializeUser((user, done) => {
     done(null, user);
 });
 
-const io = setupSocket(server);
+const io = setupSocket(server, sessionMiddleware);
 app.set('io', io);
 
 io.use((socket, next) => {

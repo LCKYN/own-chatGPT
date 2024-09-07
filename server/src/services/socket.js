@@ -1,12 +1,17 @@
 import { Server } from 'socket.io';
 
-const setupSocket = (server) => {
+const setupSocket = (server, sessionMiddleware) => {
     const io = new Server(server, {
         cors: {
             origin: "http://localhost:7100",   // Frontend origin
             methods: ["GET", "POST"],          // Allowed methods
             credentials: true,                 // Allow credentials
         }
+    });
+
+    // Use the session middleware with Socket.IO
+    io.use((socket, next) => {
+        sessionMiddleware(socket.request, {}, next);
     });
 
     io.use((socket, next) => {
