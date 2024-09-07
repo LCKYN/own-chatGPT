@@ -1,7 +1,7 @@
 import express from 'express';
 import Message from '../models/Message.js';
 import { isAuthenticated } from '../middlewares/auth.js';
-import ClaudeResponse from '../services/ClaudeApi.js';
+import getClaudeResponse from '../services/ClaudeApi.js';
 
 const router = express.Router();
 
@@ -33,7 +33,7 @@ router.post('/:roomId', isAuthenticated, async (req, res) => {
         console.log('Sent user message:', savedUserMessage);
 
         // Fetch Claude response asynchronously
-        const claudeResponse = await ClaudeResponse(req.body.content);
+        const claudeResponse = await getClaudeResponse(req.body.content);
 
         const apiMessage = new Message({
             content: claudeResponse,
