@@ -5,6 +5,7 @@ import passport from 'passport';
 import { Strategy as DiscordStrategy } from 'passport-discord';
 import session from 'express-session';
 import cors from 'cors';
+import MongoStore from 'connect-mongo';
 
 import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
@@ -26,15 +27,23 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
-app.use(session({
+
+// Updated session middleware
+const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI,
+        ttl: 14 * 24 * 60 * 60 // 14 days
+    }),
     cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        maxAge: 14 * 24 * 60 * 60 * 1000 // 14 days
     }
-}));
+});
+
+app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -45,8 +54,6 @@ passport.use(new DiscordStrategy({
     scope: ['identify', 'email']
 }, (accessToken, refreshToken, profile, done) => {
     // Here you would typically find or create a user in your database
-    // For now, we'll just pass the profile as the user
-    console.log('Discord auth successful:', profile);
     done(null, profile);
 }));
 
@@ -60,6 +67,11 @@ passport.deserializeUser((user, done) => {
 
 const io = setupSocket(server);
 app.set('io', io);
+
+// Share session middleware with Socket.IO
+io.use((socket, next) => {
+    sessionMiddleware(socket.request, {}, next);
+});
 
 // Routes
 app.use('/auth', authRoutes);
