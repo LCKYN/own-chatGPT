@@ -8,7 +8,7 @@ export default defineConfig({
         host: '0.0.0.0',
         port: 7100,
         proxy: {
-            '/api': 'http://server:7101'
+            '/api': 'http://localhost:7101'
         }
     },
     resolve: {

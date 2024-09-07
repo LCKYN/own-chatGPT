@@ -77,6 +77,8 @@ const ChatScreen = () => {
         scrollToBottom();
     }, [messages]);
 
+    
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
@@ -98,16 +100,24 @@ const ChatScreen = () => {
 
     const fetchChatRooms = async () => {
         try {
-            const response = await fetch('http://localhost:7101/api/rooms', { credentials: 'include' });
+            const response = await fetch('http://localhost:7101/api/rooms', {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            });
+            console.log('Fetch response:', response);
             if (response.status === 401) {
                 navigate('/');
                 return;
             }
-            const data = await response.json();
-            setChatRooms(data);
-            if (data.length > 0 && !selectedRoom) {
-                setSelectedRoom(data[0]._id);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            const data = await response.json();
+            console.log('Fetched chat rooms:', data);
+            setChatRooms(data);
         } catch (error) {
             console.error('Error fetching chat rooms:', error);
         }

@@ -1,63 +1,49 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Auth = () => {
+const Auth = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetch('http://localhost:7101/api/user', { credentials: 'include' })
+        fetch('http://localhost:7101/auth/user', { credentials: 'include' })
             .then(res => res.json())
             .then(data => {
                 if (data.message === 'Unauthorized') {
-                    navigate('/');
+                    setUser(null);
                 } else {
                     setUser(data);
                 }
             })
             .catch(err => {
                 console.error('Error fetching user:', err);
-                navigate('/');
-            });
-    }, [navigate]);
-
-    const handleLogin = () => {
-        window.location.href = 'http://localhost:7101/auth/discord';
-    };
-
-    const handleLogout = () => {
-        fetch('http://localhost:7101/auth/logout', { credentials: 'include' })
-            .then(() => {
-                setUser(null);
-                navigate('/');
+                setError(err.message);
             })
-            .catch(err => console.error('Error logging out:', err));
-    };
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    if (error) {
+        return <div>Error: {error}</div>;
+    }
 
     if (!user) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <button
-                    onClick={handleLogin}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                >
-                    Login with Discord
+            <div>
+                <p>You need to log in to access this page.</p>
+                <button onClick={() => window.location.href = 'http://localhost:7101/auth/discord'}>
+                    Log in with Discord
                 </button>
             </div>
         );
     }
 
-    return (
-        <div className="flex items-center justify-between p-4 bg-gray-100">
-            <span>Welcome, {user.username}!</span>
-            <button
-                onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-            >
-                Logout
-            </button>
-        </div>
-    );
+    return children;
 };
 
 export default Auth;

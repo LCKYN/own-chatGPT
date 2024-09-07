@@ -9,6 +9,7 @@ router.get('/', isAuthenticated, async (req, res) => {
         const rooms = await Room.find();
         res.json(rooms);
     } catch (err) {
+        console.error('Error fetching rooms:', err);
         res.status(500).json({ message: err.message });
     }
 });

@@ -15,7 +15,8 @@
         "dotenv": "^16.0.3",
         "passport": "^0.6.0",
         "passport-discord": "^0.1.4",
-        "express-session": "^1.17.3"
+        "express-session": "^1.17.3",
+        "cors": "^2.8.5"
     },
     "devDependencies": {
         "nodemon": "^2.0.22"

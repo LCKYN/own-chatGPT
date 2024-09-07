@@ -1,2 +1,4 @@
 **/node_modules
 .env
+gen_text_file.py
+code_contents.txt

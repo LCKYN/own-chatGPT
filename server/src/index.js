@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import passport from 'passport';
 import { Strategy as DiscordStrategy } from 'passport-discord';
 import session from 'express-session';
+import cors from 'cors';
 
 import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
@@ -18,11 +19,21 @@ const server = http.createServer(app);
 
 connectDB();
 
+app.use(cors({
+    origin: 'http://localhost:7100',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -34,6 +45,8 @@ passport.use(new DiscordStrategy({
     scope: ['identify', 'email']
 }, (accessToken, refreshToken, profile, done) => {
     // Here you would typically find or create a user in your database
+    // For now, we'll just pass the profile as the user
+    console.log('Discord auth successful:', profile);
     done(null, profile);
 }));
 
