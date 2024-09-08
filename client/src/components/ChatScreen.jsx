@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusCircle, Trash2, Edit2, Send, LogOut } from 'lucide-react';
+import { PlusCircle, Trash2, Edit2, Send, LogOut, Copy } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import io from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,6 +16,7 @@ const ChatScreen = () => {
     const [user, setUser] = useState(null);
     const navigate = useNavigate();
     const messagesEndRef = useRef(null);
+    const textareaRef = useRef(null);
 
     useEffect(() => {
         fetchUser();
@@ -202,6 +206,7 @@ const ChatScreen = () => {
                 const newMessage = await response.json();
                 setMessages([...messages, newMessage]);
                 setMessage('');
+                textareaRef.current.style.height = 'auto';
             } catch (error) {
                 console.error('Error sending message:', error);
             }
@@ -222,6 +227,19 @@ const ChatScreen = () => {
         }
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage(e);
+        }
+    };
+
+    const handleTextareaChange = (e) => {
+        setMessage(e.target.value);
+        e.target.style.height = 'auto';
+        e.target.style.height = `${e.target.scrollHeight}px`;
+    };
+
     const handleLogout = async () => {
         try {
             await fetch('http://localhost:7101/auth/logout', { credentials: 'include' });
@@ -229,6 +247,41 @@ const ChatScreen = () => {
         } catch (error) {
             console.error('Error logging out:', error);
         }
+    };
+
+    const CodeBlock = ({ node, inline, className, children, ...props }) => {
+        const match = /language-(\w+)/.exec(className || '');
+        const [isCopied, setIsCopied] = useState(false);
+
+        const copyToClipboard = () => {
+            navigator.clipboard.writeText(children);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        };
+
+        return !inline && match ? (
+            <div className="relative">
+                <button
+                    onClick={copyToClipboard}
+                    className="absolute top-2 right-2 bg-gray-700 text-white p-1 rounded"
+                >
+                    {isCopied ? 'Copied!' : <Copy size={16} />}
+                </button>
+                <SyntaxHighlighter
+                    style={tomorrow}
+                    language={match[1]}
+                    PreTag="div"
+                    className="border border-gray-300 rounded"
+                    {...props}
+                >
+                    {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
+            </div>
+        ) : (
+            <code className={className} {...props}>
+                {children}
+            </code>
+        );
     };
 
     return (
@@ -275,13 +328,20 @@ const ChatScreen = () => {
                 <div className="flex-1 p-4 overflow-y-auto">
                     <h2 className="text-2xl font-bold mb-4">{chatRooms.find(room => room._id === selectedRoom)?.name}</h2>
                     {messages.map((msg) => (
-                        <div key={msg._id} className="mb-2 flex justify-between items-start">
-                            <div>
+                        <div key={msg._id} className="mb-4 flex justify-between items-start">
+                            <div className="flex-grow">
                                 <span className="font-bold">{msg.sender}: </span>
-                                <span>{msg.content}</span>
+                                <ReactMarkdown
+                                    className="inline whitespace-pre-wrap"
+                                    components={{
+                                        code: CodeBlock,
+                                    }}
+                                >
+                                    {msg.content}
+                                </ReactMarkdown>
                             </div>
                             {msg.sender === user?.username && (
-                                <button onClick={() => handleDeleteMessage(msg._id)} className="text-red-400 hover:text-red-300">
+                                <button onClick={() => handleDeleteMessage(msg._id)} className="text-red-400 hover:text-red-300 ml-2">
                                     <Trash2 size={16} />
                                 </button>
                             )}
@@ -292,17 +352,19 @@ const ChatScreen = () => {
 
                 {/* Message input */}
                 <form onSubmit={handleSendMessage} className="p-4 bg-white">
-                    <div className="flex items-center">
-                        <input
-                            type="text"
+                    <div className="flex items-end">
+                        <textarea
+                            ref={textareaRef}
                             value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            placeholder="Type your message..."
-                            className="flex-1 border border-gray-300 rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onChange={handleTextareaChange}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Type your message... (Shift+Enter for new line)"
+                            className="flex-1 border border-gray-300 rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
+                            style={{ minHeight: '40px', maxHeight: '200px' }}
                         />
                         <button
                             type="submit"
-                            className="bg-blue-500 text-white p-2 rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="bg-blue-500 text-white p-2 rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 h-[40px]"
                         >
                             <Send className="w-5 h-5" />
                         </button>

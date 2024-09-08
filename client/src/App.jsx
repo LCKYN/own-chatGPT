@@ -10,9 +10,7 @@ function App() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('http://localhost:7101/auth/user', {
-            credentials: 'include'
-        })
+        fetch('http://localhost:7101/auth/user', { credentials: 'include' })
             .then(res => res.json())
             .then(data => {
                 if (data.message !== 'Unauthorized') {

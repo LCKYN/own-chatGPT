@@ -33,7 +33,7 @@ router.post('/:roomId', isAuthenticated, async (req, res) => {
         console.log('Sent user message:', savedUserMessage);
 
         // Fetch Claude response asynchronously
-        const claudeResponse = await getClaudeResponse(req.body.content);
+        const claudeResponse = await getClaudeResponse(req.body.content, req.params.roomId);
 
         const apiMessage = new Message({
             content: claudeResponse,
