@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusCircle, Trash2, Edit2, Send, LogOut, Copy } from 'lucide-react';
+import { PlusCircle, Trash2, Edit2, Send, LogOut, Copy, Moon, Sun } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import io from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,6 +14,7 @@ const ChatScreen = () => {
     const [messages, setMessages] = useState([]);
     const [message, setMessage] = useState('');
     const [user, setUser] = useState(null);
+    const [isDarkMode, setIsDarkMode] = useState(false);
     const navigate = useNavigate();
     const messagesEndRef = useRef(null);
     const textareaRef = useRef(null);
@@ -249,6 +250,10 @@ const ChatScreen = () => {
         }
     };
 
+    const toggleTheme = () => {
+        setIsDarkMode(!isDarkMode);
+    };
+
     const CodeBlock = ({ node, inline, className, children, ...props }) => {
         const match = /language-(\w+)/.exec(className || '');
         const [isCopied, setIsCopied] = useState(false);
@@ -263,15 +268,15 @@ const ChatScreen = () => {
             <div className="relative">
                 <button
                     onClick={copyToClipboard}
-                    className="absolute top-2 right-2 bg-gray-700 text-white p-1 rounded"
+                    className={`absolute top-2 right-2 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'} p-1 rounded`}
                 >
                     {isCopied ? 'Copied!' : <Copy size={16} />}
                 </button>
                 <SyntaxHighlighter
-                    style={tomorrow}
+                    style={isDarkMode ? vscDarkPlus : vs}
                     language={match[1]}
                     PreTag="div"
-                    className="border border-gray-300 rounded"
+                    className={`border ${isDarkMode ? 'border-gray-600' : 'border-gray-300'} rounded`}
                     {...props}
                 >
                     {String(children).replace(/\n$/, '')}
@@ -285,12 +290,12 @@ const ChatScreen = () => {
     };
 
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className={`flex h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'}`}>
             {/* Left sidebar */}
-            <div className="w-64 bg-gray-800 text-white p-4 flex flex-col">
+            <div className={`w-64 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'} p-4 flex flex-col`}>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">Chat Rooms</h2>
-                    <button onClick={handleAddRoom} className="text-green-400 hover:text-green-300">
+                    <button onClick={handleAddRoom} className={`${isDarkMode ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-500'}`}>
                         <PlusCircle size={24} />
                     </button>
                 </div>
@@ -298,25 +303,27 @@ const ChatScreen = () => {
                     {chatRooms.map((room) => (
                         <li
                             key={room._id}
-                            className={`flex justify-between items-center p-2 mb-2 rounded cursor-pointer ${selectedRoom === room._id ? 'bg-blue-600' : 'hover:bg-gray-700'
+                            className={`flex justify-between items-center p-2 mb-2 rounded cursor-pointer ${selectedRoom === room._id
+                                ? (isDarkMode ? 'bg-blue-700' : 'bg-blue-500')
+                                : (isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-300')
                                 }`}
                             onClick={() => setSelectedRoom(room._id)}
                         >
                             <span>{room.name}</span>
                             <div>
-                                <button onClick={() => handleRenameRoom(room._id)} className="mr-2 text-yellow-400 hover:text-yellow-300">
+                                <button onClick={() => handleRenameRoom(room._id)} className={`mr-2 ${isDarkMode ? 'text-yellow-400 hover:text-yellow-300' : 'text-yellow-600 hover:text-yellow-500'}`}>
                                     <Edit2 size={16} />
                                 </button>
-                                <button onClick={() => handleRemoveRoom(room._id)} className="text-red-400 hover:text-red-300">
+                                <button onClick={() => handleRemoveRoom(room._id)} className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-500'}`}>
                                     <Trash2 size={16} />
                                 </button>
                             </div>
                         </li>
                     ))}
                 </ul>
-                <div className="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
+                <div className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-300'} flex justify-between items-center`}>
                     <span>{user?.username}</span>
-                    <button onClick={handleLogout} className="text-red-400 hover:text-red-300">
+                    <button onClick={handleLogout} className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-500'}`}>
                         <LogOut size={24} />
                     </button>
                 </div>
@@ -324,9 +331,16 @@ const ChatScreen = () => {
 
             {/* Main chat area */}
             <div className="flex-1 flex flex-col">
+                {/* Chat header */}
+                <div className={`p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} flex justify-between items-center`}>
+                    <h2 className="text-2xl font-bold">{chatRooms.find(room => room._id === selectedRoom)?.name}</h2>
+                    <button onClick={toggleTheme} className={`${isDarkMode ? 'text-yellow-400' : 'text-gray-600'}`}>
+                        {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
+                    </button>
+                </div>
+
                 {/* Chat history */}
-                <div className="flex-1 p-4 overflow-y-auto">
-                    <h2 className="text-2xl font-bold mb-4">{chatRooms.find(room => room._id === selectedRoom)?.name}</h2>
+                <div className={`flex-1 p-4 overflow-y-auto ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
                     {messages.map((msg) => (
                         <div key={msg._id} className="mb-4 flex justify-between items-start">
                             <div className="flex-grow">
@@ -341,7 +355,7 @@ const ChatScreen = () => {
                                 </ReactMarkdown>
                             </div>
                             {msg.sender === user?.username && (
-                                <button onClick={() => handleDeleteMessage(msg._id)} className="text-red-400 hover:text-red-300 ml-2">
+                                <button onClick={() => handleDeleteMessage(msg._id)} className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-500'} ml-2`}>
                                     <Trash2 size={16} />
                                 </button>
                             )}
@@ -351,7 +365,7 @@ const ChatScreen = () => {
                 </div>
 
                 {/* Message input */}
-                <form onSubmit={handleSendMessage} className="p-4 bg-white">
+                <form onSubmit={handleSendMessage} className={`p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                     <div className="flex items-end">
                         <textarea
                             ref={textareaRef}
@@ -359,7 +373,7 @@ const ChatScreen = () => {
                             onChange={handleTextareaChange}
                             onKeyDown={handleKeyDown}
                             placeholder="Type your message... (Shift+Enter for new line)"
-                            className="flex-1 border border-gray-300 rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
+                            className={`flex-1 border ${isDarkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-black'} rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden`}
                             style={{ minHeight: '40px', maxHeight: '200px' }}
                         />
                         <button
